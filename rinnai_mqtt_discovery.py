@@ -52,9 +52,14 @@ class RinnaiHomeAssistantDiscovery:
 
         if config_type == 'sensor' and object_id == 'gasConsumption':
             config.update({
-                "state_topic": "local_mqtt/rinnai/gas",
+                "state_topic": "local_mqtt/rinnai/usage/gas",
                 "unit_of_measurement": "m³",
                 "device_class": "gas"
+            })
+        elif config_type == 'sensor' and 'supplyTime' in object_id:
+            config.update({
+                "state_topic": "local_mqtt/rinnai/usage/supplyTime",
+                "value_template": f"{{{{ value_json.{object_id.split('/')[-1]} }}}}",
             })
 
 
@@ -124,7 +129,13 @@ class RinnaiHomeAssistantDiscovery:
             ("热水温度", "hotWaterTempSetting", "°C"),
             ("锅炉温度", "heatingTempSettingNM", "°C"),
             ("锅炉温度/节能", "heatingTempSettingHES", "°C"),
-            ("耗气量", "gasConsumption", "m³")
+            ("耗气量", "gasConsumption", "m³"),
+            ("总供电时间", "supplyTime/totalPowerSupplyTime", "h"),
+            ("实际使用时间", "supplyTime/actualUseTime", "h"),
+            ("总采暖燃烧时间", "supplyTime/totalHeatingBurningTime", "h"),
+            ("总热水燃烧时间", "supplyTime/totalHotWaterBurningTime", "h"),
+            ("采暖燃烧次数", "supplyTime/heatingBurningTimes", "次"),
+            ("热水燃烧次数", "supplyTime/hotWaterBurningTimes", "次")
 
         ]
 

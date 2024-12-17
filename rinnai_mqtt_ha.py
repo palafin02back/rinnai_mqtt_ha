@@ -23,20 +23,56 @@ class RinnaiHomeAssistantIntegration:
         self.rinnai_password = str.upper(
             hashlib.md5(password.encode('utf-8')).hexdigest())
         self.device_sn = os.getenv('DEVICE_SN')
+        """
+            已知主题:
+            rinnai/SR/01/SR/{device_sn}/sys/
+            rinnai/SR/01/SR/{device_sn}/inf/
+            rinnai/SR/01/SR/{device_sn}/set/
+            rinnai/SR/01/SR/{device_sn}/res/
+            rinnai/SR/01/SR/{device_sn}/get/
+            rinnai/SR/01/SR/{device_sn}/stg/
 
-        # 本地MQTT服务器配置
+        """
+        self.rinnai_topics = {
+            "inf": f"rinnai/SR/01/SR/{self.device_sn}/inf/",
+            "stg": f"rinnai/SR/01/SR/{self.device_sn}/stg/",
+            "set": f"rinnai/SR/01/SR/{self.device_sn}/set/"
+        }
+        """
+            本地主题:
+            hotWaterTempSetting: 热水温度设置
+            heatingTempSettingNM: 暖气温度设置(普通模式)
+            heatingTempSettingHES: 暖气温度设置(节能模式)
+            energySavingMode: 节能模式
+            outdoorMode: 外出模式
+            rapidHeating: 快速采暖
+            summerWinter: 采暖开关
+            state: 设备状态
+            gas: 耗气量
+        """
+        self.local_topics = {
+            "hotWaterTempSetting": "local_mqtt/rinnai/set/temp/hotWaterTempSetting",
+            "heatingTempSettingNM": "local_mqtt/rinnai/set/temp/heatingTempSettingNM",
+            "heatingTempSettingHES": "local_mqtt/rinnai/set/temp/heatingTempSetting",
+            "energySavingMode": "local_mqtt/rinnai/set/mode/energySavingMode",
+            "outdoorMode": "local_mqtt/rinnai/set/mode/outdoorMode",
+            "rapidHeating": "local_mqtt/rinnai/set/mode/rapidHeating",
+            "summerWinter": "local_mqtt/rinnai/set/mode/summerWinter",
+            "state": "local_mqtt/rinnai/state",
+            "gas": "local_mqtt/rinnai/usage/gas",
+            "supplyTime": "local_mqtt/rinnai/usage/supplyTime"
+        }
+
+        self.device_data = {
+            "state": {},
+            "gas": {},
+            "supplyTime": {}
+        }
+
         self.local_mqtt_host = os.getenv('LOCAL_MQTT_HOST')
         self.local_mqtt_port = int(os.getenv('LOCAL_MQTT_PORT', '1883'))
-
-        # Rinnai MQTT客户端
         self.rinnai_client = self._create_rinnai_client()
-
-        # 本地MQTT客户端
         self.local_client = self._create_local_client()
-
-        # 设备状态和耗气量
-        self.device_state = {}
-        self.gas_consumption = {}
 
     def _create_rinnai_client(self):
         client = mqtt.Client(
@@ -66,58 +102,52 @@ class RinnaiHomeAssistantIntegration:
     def on_rinnai_connect(self, client, userdata, flags, rc):
         logging.info(f"rinnai mqtt connect status: {rc}")
         if rc == 0:
-            """
-            已知主题:
-            rinnai/SR/01/SR/{device_sn}/sys/
-            rinnai/SR/01/SR/{device_sn}/inf/
-            rinnai/SR/01/SR/{device_sn}/set/
-            rinnai/SR/01/SR/{device_sn}/res/
-            rinnai/SR/01/SR/{device_sn}/get/
-            rinnai/SR/01/SR/{device_sn}/stg/
-
-            """
-            client.subscribe(f"rinnai/SR/01/SR/{self.device_sn}/inf/")
-            client.subscribe(f"rinnai/SR/01/SR/{self.device_sn}/stg/")
+            # 订阅林内服务器主题
+            for topic in self.rinnai_topics.values():
+                client.subscribe(topic)
 
     def on_local_connect(self, client, userdata, flags, rc):
         logging.info(f"local mqtt connect status: {rc}")
         if rc == 0:
-            # 本地服务器订阅设置主题，区分热水和暖气
-            client.subscribe("local_mqtt/rinnai/set/temp/hotWaterTempSetting")
-            client.subscribe("local_mqtt/rinnai/set/temp/heatingTempSettingNM")
-            client.subscribe("local_mqtt/rinnai/set/temp/heatingTempSettingHES")
-            client.subscribe("local_mqtt/rinnai/set/mode/energySavingMode")
-            client.subscribe("local_mqtt/rinnai/set/mode/outdoorMode")
-            client.subscribe("local_mqtt/rinnai/set/mode/rapidHeating")
-            client.subscribe("local_mqtt/rinnai/set/mode/summerWinter")
+            # 本地服务器订阅设置主题
+            for topic in self.local_topics.values():
+                client.subscribe(topic)
 
 
     def on_rinnai_message(self, client, userdata, msg):
         try:
+            logging.info(
+                f"rinnai msg topic: {msg.topic}, payload: {json.loads(msg.payload.decode('utf-8'))}")
             self._process_rinnai_message(msg)
         except Exception as e:
             logging.info(f"Rinnai msg error: {e}")
 
     def _publish_device_state(self):
 
-        # 发布完整的设备状态到本地MQTT
-        state_topic = "local_mqtt/rinnai/state"
+        # 同步完整的设备状态到本地MQTT
         self.local_client.publish(
-            state_topic,
-            json.dumps(self.device_state, ensure_ascii=False)
+            self.local_topics["state"],
+            json.dumps(self.device_data["state"], ensure_ascii=False)
         )
-        logging.info(f"Publish to local mqtt: {self.device_state}")
+        logging.info(f"Publish to local mqtt: {self.device_data['state']}")
     
     def _publish_gas_consumption(self):
 
-            # 发布完整的设备状态到本地MQTT
-        gas_topic = "local_mqtt/rinnai/gas"
+        # 同步耗气量本地MQTT
         self.local_client.publish(
-            gas_topic,
-            json.dumps(self.gas_consumption, ensure_ascii=False)
+            self.local_topics["gas"],
+            json.dumps(self.device_data["gas"], ensure_ascii=False)
         )
-        logging.info(f"Publish to local mqtt: {self.gas_consumption}")
+        logging.info(f"Publish to local mqtt: {self.device_data['gas']}")
 
+    def _publish_supply_time(self):
+            
+            # 同步耗气量本地MQTT
+            self.local_client.publish(
+                self.local_topics["supplyTime"],
+                json.dumps(self.device_data["supplyTime"], ensure_ascii=False)
+            )
+            logging.info(f"Publish to local mqtt: {self.device_data['supplyTime']}")
     def on_local_message(self, client, userdata, msg):
         try:
             action = msg.topic.split('/')[-2]
@@ -149,10 +179,8 @@ class RinnaiHomeAssistantIntegration:
             "ptn": "J00",
             "sum": "1"
         }
-
-        set_topic = f"rinnai/SR/01/SR/{self.device_sn}/set/"
         self.rinnai_client.publish(
-            set_topic, json.dumps(request_payload), qos=1)
+            self.rinnai_topics["set"], json.dumps(request_payload), qos=1)
         print(f"设置{heat_type}温度为 {temperature}°C")
 
     def set_rinnai_mode(self, mode):
@@ -174,10 +202,8 @@ class RinnaiHomeAssistantIntegration:
             "ptn": "J00",
             "sum": "1"
         }
-
-        set_topic = f"rinnai/SR/01/SR/{self.device_sn}/set/"
         self.rinnai_client.publish(
-            set_topic, json.dumps(request_payload), qos=1)
+            self.rinnai_topics["set"], json.dumps(request_payload), qos=1)
         logging.info(f"SET {mode}")
 
     def _get_operation_mode(self, mode_code):
@@ -214,42 +240,104 @@ class RinnaiHomeAssistantIntegration:
         }
         return state_mapping.get(state_code, f"invalid ({state_code})")
 
+
     def _process_rinnai_message(self, msg):
-        payload = msg.payload.decode('utf-8')
-        parsed_data = json.loads(payload)
-        # if msg.topic.endswith('/inf/'):
-        self.device_state = {}
-        self.gas_consumption = {}
-        if "enl" in parsed_data:        
-            for param in parsed_data['enl']:
-                param_id = param['id']
-                param_data = param['data']
+        try:
+            parsed_data = json.loads(msg.payload.decode('utf-8'))
+            parsed_topic = msg.topic.split('/')[-2]
 
-                if param_id == 'operationMode':
-                    self.device_state['operationMode'] = self._get_operation_mode(
-                        param_data)
-                elif param_id == 'roomTempControl':
-                    self.device_state['roomTempControl'] = f"{int(param_data, 16)}"
-                elif param_id == 'heatingOutWaterTempControl':
-                    self.device_state['heatingOutWaterTempControl'] = f"{int(param_data, 16)}"
-                elif param_id == 'burningState':
-                    self.device_state['burningState'] = self._get_burning_state(
-                        param_data)
-                elif param_id == 'hotWaterTempSetting':
-                    self.device_state['hotWaterTempSetting'] = f"{int(param_data, 16)}"
-                elif param_id == 'heatingTempSettingNM':
-                    self.device_state['heatingTempSettingNM'] = f"{int(param_data, 16)}"
-                elif param_id == 'heatingTempSettingHES':
-                    self.device_state['heatingTempSettingHES'] = f"{int(param_data, 16)}"
-            self._publish_device_state()
-        elif "egy" in parsed_data:
-            for param in parsed_data['egy']:
-                gas_consumption = param.get('gasConsumption')
-                if gas_consumption is not None:
-                    logger.info(f"gasConsumption: {gas_consumption}")
-                    self.gas_consumption['gasConsumption'] = f"{int(gas_consumption, 16)}"
+            # 检查是否空数据
+            if not parsed_data or not parsed_topic:
+                logging.warning("Received invalid or empty message")
+                return
 
-            self._publish_gas_consumption()
+            # 处理设备信息消息
+            if parsed_topic == 'inf' and parsed_data.get('enl') and parsed_data.get('code') == "FFFF":
+                # 重置设备状态
+                # self.device_data["state"] = {}
+
+                for param in parsed_data['enl']:
+                    try:
+                        param_id = param.get('id')
+                        param_data = param.get('data')
+
+                        # 仅处理有效的参数
+                        if not param_id or not param_data:
+                            continue
+
+                        # 使用映射来简化和标准化处理逻辑
+                        state_mapping = {
+                            'operationMode': lambda x: self._get_operation_mode(x),
+                            'roomTempControl': lambda x: str(int(x, 16)),
+                            'heatingOutWaterTempControl': lambda x: str(int(x, 16)),
+                            'burningState': lambda x: self._get_burning_state(x),
+                            'hotWaterTempSetting': lambda x: str(int(x, 16)),
+                            'heatingTempSettingNM': lambda x: str(int(x, 16)),
+                            'heatingTempSettingHES': lambda x: str(int(x, 16))
+                        }
+
+                        # 根据映射处理参数
+                        if param_id in state_mapping:
+                            self.device_data["state"][param_id] = state_mapping[param_id](param_data)
+
+                    except Exception as e:
+                        logging.error(
+                            f"Error processing parameter {param_id}: {e}")
+
+                # 仅在有有效状态时发布
+                if self.device_data["state"]:
+                    self._publish_device_state()
+
+            # 处理能耗信息
+            elif parsed_topic == 'stg' and parsed_data.get('egy') and parsed_data.get('ptn') == "J05":
+                # self.device_data["gas"] = {}
+                for param in parsed_data['egy']:
+
+                    try:
+                        gas_consumption = param.get('gasConsumption')
+                        totalPowerSupplyTime = param.get('totalPowerSupplyTime')
+                        if not gas_consumption or not totalPowerSupplyTime:
+                            continue
+                        if gas_consumption is not None:
+                            try:
+                                consumption = int(gas_consumption, 16)
+                                self.device_data["gas"]["gasConsumption"] = str(consumption)
+                                logger.info(f"gasConsumption: {consumption}")
+                            except ValueError:
+                                logging.warning(
+                                    f"Invalid gas consumption value: {gas_consumption}")
+                        if totalPowerSupplyTime is not None:
+                            try:
+                                usage_mapping = {
+                                    'totalPowerSupplyTime': lambda x: str(int(x, 16)),
+                                    'actualUseTime': lambda x: str(int(x, 16)),
+                                    'totalHeatingBurningTime': lambda x: str(int(x, 16)),
+                                    'burningtotalHotWaterBurningTimeState': lambda x: str(int(x, 16)),
+                                    'heatingBurningTimes': lambda x: str(int(x, 16)),
+                                    'hotWaterBurningTimes': lambda x: str(int(x, 16))
+                                }
+                                if param_id in usage_mapping:
+                                    self.device_data["supplyTime"][param_id] = usage_mapping[param_id](
+                                        param.get('param_id'))
+                                logger.info(
+                                    f"supplyTime: {self.device_data['supplyTime']}")
+                            except ValueError:
+                                logging.warning(
+                                    f"Invalid total power supply time value: {totalPowerSupplyTime}")
+                    except Exception as e:
+                        logging.error(f"Error processing gas consumption: {e}")
+
+                # 仅在有有效消耗值时更新和发布
+                if gas_consumption:
+                    self._publish_gas_consumption()
+                if totalPowerSupplyTime:
+                    self._publish_supply_time()
+
+        except json.JSONDecodeError:
+            logging.error("Failed to parse JSON message")
+        except Exception as e:
+            logging.error(f"Unexpected error in message processing: {e}")
+    
     def start(self):
         # 连接Rinnai MQTT服务器
         self.rinnai_client.connect(
