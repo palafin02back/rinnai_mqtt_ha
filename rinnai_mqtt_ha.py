@@ -318,14 +318,14 @@ class RinnaiHomeAssistantIntegration:
                                 }
                                 if param_id in usage_mapping:
                                     self.device_data["supplyTime"][param_id] = usage_mapping[param_id](
-                                        param.get('param_id'))
+                                        param.get(param_id))
                                 logger.info(
                                     f"supplyTime: {self.device_data['supplyTime']}")
                             except ValueError:
                                 logging.warning(
                                     f"Invalid total power supply time value: {totalPowerSupplyTime}")
                     except Exception as e:
-                        logging.error(f"Error processing gas consumption: {e}")
+                        logging.error(f"Error processing eyg: {e}")
 
                 # 仅在有有效消耗值时更新和发布
                 if gas_consumption:
