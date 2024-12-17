@@ -246,7 +246,8 @@ class RinnaiHomeAssistantIntegration:
             for param in parsed_data['egy']:
                 gas_consumption = param.get('gasConsumption')
                 if gas_consumption is not None:
-                    self.gas_consumption['gasConsumption'] = f"{int(gas_consumption, 16)/1000000}"
+                    logger.info(f"gasConsumption: {gas_consumption}")
+                    self.gas_consumption['gasConsumption'] = f"{int(gas_consumption, 16)}"
 
             self._publish_gas_consumption()
     def start(self):
