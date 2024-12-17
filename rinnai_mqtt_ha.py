@@ -296,7 +296,7 @@ class RinnaiHomeAssistantIntegration:
                     try:
                         gas_consumption = param.get('gasConsumption')
                         totalPowerSupplyTime = param.get('totalPowerSupplyTime')
-                        if not gas_consumption or not totalPowerSupplyTime:
+                        if not gas_consumption and not totalPowerSupplyTime:
                             continue
                         if gas_consumption is not None:
                             try:
