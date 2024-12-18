@@ -349,13 +349,15 @@ class RinnaiHomeAssistantIntegration:
             "rapidHeating": ["快速采暖", "快速采暖/节能", "快速采暖/外出", "快速采暖/预约"],
         }
         _mode = os.getenv('OPERATION_MODE')
+        logger.info(f"Current mode: {_mode}")
         if _mode is None:
             logging.error("OPERATION_MODE is not set")
             return
 
         result = next((mode for mode, values in mode_codes.items()
-                      if _get_operation_mode(_mode) in values), None)
-        set_rinnai_mode(result)
+                      if self._get_operation_mode(_mode) in values), None)
+        logger.info(f"Current result: {result}")
+        self.set_rinnai_mode(result)
 
     def start(self):
         # 连接Rinnai MQTT服务器
