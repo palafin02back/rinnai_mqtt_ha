@@ -344,7 +344,7 @@ class RinnaiHomeAssistantIntegration:
     def init_data(self):
         # 初始化数据
         mode_codes = {
-            "energySavingMode": ["采暖节能", "快速采暖/节能"],
+            "energySavingMode": ["采暖节能", "快速采暖/节能","冬季普通"],
             "outdoorMode": ["采暖外出", "快速采暖/外出"],
             "rapidHeating": ["快速采暖", "快速采暖/节能", "快速采暖/外出", "快速采暖/预约"],
         }
