@@ -74,7 +74,7 @@ class RinnaiHomeAssistantIntegration:
         self.rinnai_client = self._create_rinnai_client()
         self.local_client = self._create_local_client()
         #立马设置当前状态来获取最新状态
-        init_data()
+        self.init_data()
 
 
     def _create_rinnai_client(self):
