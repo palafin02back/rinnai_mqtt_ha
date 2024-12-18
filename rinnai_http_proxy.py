@@ -25,6 +25,7 @@ class RinnaiHttpProxy:
         self.authCode = None
         self.deviceType = None
         self.deviceId = None
+        self.operationMode = None
     
     def login(self):
         params = {
@@ -55,6 +56,7 @@ class RinnaiHttpProxy:
                 self.authCode = devices[0].get("authCode")
                 self.deviceType = devices[0].get("deviceType")
                 self.deviceId = devices[0].get("id")
+                self.operationMode = devices[0].get("operationMode")
                 return True
         return None
 
@@ -68,6 +70,7 @@ def env_setup():
     set_key(dotenv_path, "AUTH_CODE", Rinnai.authCode, quote_mode="never")
     set_key(dotenv_path, "DEVICE_TYPE", Rinnai.deviceType, quote_mode="never")
     set_key(dotenv_path, "DEVICE_ID", Rinnai.deviceId, quote_mode="never")
+    set_key(dotenv_path, "OPERATION_MODE", Rinnai.operationMode, quote_mode="never")
 
 # Example usage
 if __name__ == "__main__":

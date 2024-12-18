@@ -73,6 +73,9 @@ class RinnaiHomeAssistantIntegration:
         self.local_mqtt_port = int(os.getenv('LOCAL_MQTT_PORT', '1883'))
         self.rinnai_client = self._create_rinnai_client()
         self.local_client = self._create_local_client()
+        #立马设置当前状态来获取最新状态
+        init_data()
+
 
     def _create_rinnai_client(self):
         client = mqtt.Client(
@@ -325,7 +328,7 @@ class RinnaiHomeAssistantIntegration:
                                 logging.warning(
                                     f"Invalid total power supply time value: {totalPowerSupplyTime}")
                     except Exception as e:
-                        logging.error(f"Error processing eyg: {e}")
+                        logging.error(f"Error processing egy: {e}")
 
                 # 仅在有有效消耗值时更新和发布
                 if gas_consumption:
@@ -338,6 +341,22 @@ class RinnaiHomeAssistantIntegration:
         except Exception as e:
             logging.error(f"Unexpected error in message processing: {e}")
     
+    def init_data(self):
+        # 初始化数据
+        mode_codes = {
+            "energySavingMode": ["采暖节能", "快速采暖/节能"],
+            "outdoorMode": ["采暖外出", "快速采暖/外出"],
+            "rapidHeating": ["快速采暖", "快速采暖/节能", "快速采暖/外出", "快速采暖/预约"],
+        }
+        _mode = os.getenv('OPERATION_MODE')
+        if _mode is None:
+            logging.error("OPERATION_MODE is not set")
+            return
+
+        result = next((mode for mode, values in mode_codes.items()
+                      if _get_operation_mode(_mode) in values), None)
+        set_rinnai_mode(result)
+
     def start(self):
         # 连接Rinnai MQTT服务器
         self.rinnai_client.connect(
