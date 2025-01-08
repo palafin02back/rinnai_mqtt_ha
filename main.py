@@ -41,7 +41,7 @@ def main():
         # Publish Home Assistant discovery configurations
         rinnai_ha_discovery.publish_discovery_configs()
         # Connect to MQTT brokers
-        rinnai_client.connect(config.RINNAI_HOST, config.RINNAI_PORT)
+        rinnai_client.connect(config.RINNAI_MQTT_HOST, config.RINNAI_MQTT_PORT)
         local_client.connect(config.LOCAL_MQTT_HOST, config.LOCAL_MQTT_PORT)
 
         # Start clients
