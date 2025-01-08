@@ -1,33 +1,26 @@
 import json
 import logging
-from typing import Optional
-from .mqtt_client import MQTTClientBase
-from processors.message_processor import DeviceDataObserver
 import time
-import ssl
+from typing import Optional
+from .mqtt_client import MQTTClientBase, MQTTConfig
+from processors.message_processor import DeviceDataObserver
 
 
 class LocalClient(MQTTClientBase, DeviceDataObserver):
     def __init__(self, config, rinnai_client):
-        super().__init__("rinnai_ha_local")
+        mqtt_config = MQTTConfig(
+            host=config.LOCAL_MQTT_HOST,
+            port=config.LOCAL_MQTT_PORT,
+            username=config.LOCAL_MQTT_USERNAME,
+            password=config.LOCAL_MQTT_PASSWORD,
+            use_tls=config.LOCAL_MQTT_TLS
+        )
+        super().__init__("rinnai_ha_local", mqtt_config)
         self.config = config
         self.rinnai_client = rinnai_client
         self.topics = config.get_local_topics()
         self.device_data = {}
         self.rinnai_client.message_processor.register_observer(self)
-
-        if self.config.LOCAL_MQTT_TLS :
-            self.client.tls_set(
-                cert_reqs=ssl.CERT_NONE,
-                tls_version=ssl.PROTOCOL_TLSv1_2
-            )
-            self.client.tls_insecure_set(True)
-            logging.info("Local MQTT TLS enabled")
-
-        if self.config.LOCAL_MQTT_USERNAME and self.config.LOCAL_MQTT_PASSWORD:
-            self.client.username_pw_set(
-                self.config.LOCAL_MQTT_USERNAME, self.config.LOCAL_MQTT_PASSWORD)
-            logging.info("Local MQTT authentication enabled")
 
     def on_connect(self, client, userdata, flags, rc):
         logging.info(f"Local MQTT connect status: {rc}")
@@ -51,10 +44,8 @@ class LocalClient(MQTTClientBase, DeviceDataObserver):
         except Exception as e:
             logging.error(f"Local MQTT set failed: {e}")
 
-
     def update(self, device_data: dict) -> None:
         """Update device data from MessageProcessor."""
-        # 检查是否有新的 device_data，且状态数据不为空
         if device_data:
             if device_data.get("state"):
                 self.device_data["state"] = device_data["state"]
@@ -70,28 +61,35 @@ class LocalClient(MQTTClientBase, DeviceDataObserver):
         else:
             logging.warning("Received empty device data; no updates made.")
 
-
     def publish_state(self, state_data: dict):
         """Publish device state to local MQTT broker."""
-        self.publish(
-            self.topics["state"],
-            json.dumps(state_data, ensure_ascii=False)
-        )
-        logging.info(f"Published state to local MQTT: {state_data}")
+        try:
+            self.publish(
+                self.topics["state"],
+                json.dumps(state_data, ensure_ascii=False)
+            )
+            logging.info(f"Published state to local MQTT: {state_data}")
+        except Exception as e:
+            logging.error(f"Failed to publish state: {e}")
 
     def publish_gas_consumption(self, gas_data: dict):
         """Publish gas consumption to local MQTT broker."""
-        self.publish(
-            self.topics["gas"],
-            json.dumps(gas_data, ensure_ascii=False)
-        )
-        logging.info(f"Published gas consumption to local MQTT: {gas_data}")
+        try:
+            self.publish(
+                self.topics["gas"],
+                json.dumps(gas_data, ensure_ascii=False)
+            )
+            logging.info(f"Published gas consumption to local MQTT: {gas_data}")
+        except Exception as e:
+            logging.error(f"Failed to publish gas consumption: {e}")
 
     def publish_supply_time(self, supply_time_data: dict):
         """Publish supply time to local MQTT broker."""
-        self.publish(
-            self.topics["supplyTime"],
-            json.dumps(supply_time_data, ensure_ascii=False)
-        )
-        logging.info(
-            f"Published supply time to local MQTT: {supply_time_data}")
+        try:
+            self.publish(
+                self.topics["supplyTime"],
+                json.dumps(supply_time_data, ensure_ascii=False)
+            )
+            logging.info(f"Published supply time to local MQTT: {supply_time_data}")
+        except Exception as e:
+            logging.error(f"Failed to publish supply time: {e}")

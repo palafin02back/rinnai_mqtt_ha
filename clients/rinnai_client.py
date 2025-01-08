@@ -1,36 +1,29 @@
-import ssl
 import json
 import logging
-from .mqtt_client import MQTTClientBase
+from .mqtt_client import MQTTClientBase, MQTTConfig
 from processors.message_processor import MessageProcessor
 
 
 class RinnaiClient(MQTTClientBase):
     def __init__(self, config, message_processor: MessageProcessor):
-        super().__init__("rinnai_ha_bridge")
+        mqtt_config = MQTTConfig(
+            host=config.RINNAI_MQTT_HOST,
+            port=config.RINNAI_MQTT_PORT,
+            username=config.RINNAI_USERNAME,
+            password=config.RINNAI_PASSWORD,
+            use_tls=True
+        )
+        super().__init__("rinnai_ha_bridge", mqtt_config)
         self.config = config
         self.message_processor = message_processor
         self.topics = config.get_rinnai_topics()
         logging.info(f"Rinnai topics: {self.topics}")
-
-        # Configure TLS
-        self.client.tls_set(
-            cert_reqs=ssl.CERT_NONE,
-            tls_version=ssl.PROTOCOL_TLSv1_2
-        )
-        self.client.tls_insecure_set(True)
-        self.client.username_pw_set(
-            self.config.RINNAI_USERNAME, self.config.RINNAI_PASSWORD)
 
     def on_connect(self, client, userdata, flags, rc):
         logging.info(f"Rinnai MQTT connect status: {rc}")
         if rc == 0:
             for topic in self.topics.values():
                 self.subscribe(topic)
-        
-        # self.set_default_status()
-        
-
 
     def on_message(self, client, userdata, msg):
         try:
