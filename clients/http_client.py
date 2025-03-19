@@ -19,6 +19,9 @@ class RinnaiHttpClient:
         self.init_param = {}
 
     def login(self):
+        """
+        登录林内服务器，失败直接抛出异常
+        """
         params = {
             "username": self.config.RINNAI_HTTP_USERNAME,
             "password": self.config.RINNAI_PASSWORD,
@@ -27,14 +30,28 @@ class RinnaiHttpClient:
             "appVersion": "3.1.0",
             "identityLevel": "0"
         }
-        logging.info(f"Logging in with params: {params}")
+        logging.info(f"正在登录林内服务器...")
         response = requests.get(const.LOGIN_URL, params=params)
-        if response.status_code == 200 and response.json().get("success") != False:
-            self.token = response.json().get("data").get("token")
-            logging.info(f"Login success, token: {self.token}")
-            return True
-        logging.error("Login failed")
-        return False
+
+        if response.status_code != 200:
+            error_msg = f"登录请求失败，HTTP状态码: {response.status_code}"
+            logging.error(error_msg)
+            raise ConnectionError(error_msg)
+
+        response_data = response.json()
+        if response_data.get("success") == False:
+            error_msg = f"登录验证失败: {response_data.get('message', '未知错误')}"
+            logging.error(error_msg)
+            raise ConnectionError(error_msg)
+
+        self.token = response_data.get("data", {}).get("token")
+        if not self.token:
+            error_msg = "登录响应中未包含token"
+            logging.error(error_msg)
+            raise ConnectionError(error_msg)
+
+        logging.info("登录成功")
+        return True
 
     def get_devices(self):
         headers = {"Authorization": f"Bearer {self.token}"}

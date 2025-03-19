@@ -13,6 +13,12 @@ class Config:
     RINNAI_USERNAME = f"a:rinnai:SR:01:SR:{os.getenv('RINNAI_USERNAME')}"
     RINNAI_PASSWORD = str.upper(
         hashlib.md5(os.getenv('RINNAI_PASSWORD').encode('utf-8')).hexdigest())
+
+    # 新增配置项
+    RINNAI_UPDATE_INTERVAL = int(
+        os.getenv('RINNAI_UPDATE_INTERVAL', '300'))  # 默认5分钟更新一次
+    RINNAI_CONNECT_TIMEOUT = int(
+        os.getenv('RINNAI_CONNECT_TIMEOUT', '300'))   # 连接后保持30秒
     DEVICE_SN = None
     AUTH_CODE = None
     DEVICE_TYPE = None

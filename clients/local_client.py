@@ -75,7 +75,8 @@ class LocalClient(MQTTClientBase, DeviceDataObserver):
                 if (payload == "ON" and not switch_status) or (
                     payload == "OFF" and switch_status
                 ):
-                    self.rinnai_client.set_mode(mode)
+                    #self.rinnai_client.set_mode(mode)
+                    self.rinnai_client.send_command(mode, payload)
                 else:
                     logging.info(
                         msg=f"the switch {mode} is in {payload} already, command will not be sent!"
