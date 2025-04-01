@@ -57,11 +57,29 @@ class RinnaiClient(MQTTClientBase):
             self.connected = False
             logging.info(f"Rinnai client 断开连接完成，当前状态: {self.connected}")
 
-
-    def send_command(self, topic, payload):
-        """发送命令时临时连接"""
+    def send_command(self, action, *args):
+        """
+        根据命令类型调用不同的方法
+        action: 命令类型，如'temp'或'mode'
+        args: 参数列表
+        """
         self.connect_and_update()
-        self.publish(topic, payload)
+
+        if action == "temp":
+            # args[0]是heat_type, args[1]是temperature值
+            heat_type = args[0]
+            temperature = args[1]
+            self.set_temperature(heat_type, temperature)
+        elif action == "mode":
+            # 处理模式切换，args[0]是mode名称，args[1]是payload(ON/OFF)
+            mode = args[0]
+            payload = args[1] if len(args) > 1 else None
+            self.set_mode(mode, payload)
+        else:
+            # 如果是其他命令，直接发布到相应主题
+            topic = action
+            payload = args[0] if args else ""
+            self.publish(topic, payload)
 
     def stop(self):
         """停止所有定时器"""
