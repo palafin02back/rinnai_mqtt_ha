@@ -71,16 +71,17 @@ class LocalClient(MQTTClientBase, DeviceDataObserver):
             elif action == "mode":
                 mode = msg.topic.split("/")[-1]
                 payload = msg.payload.decode()
-                switch_status = LocalClient.get_switch_status(
-                    mode, self.device_data["state"]["operationMode"]
-                )
-                if (payload == "ON" and not switch_status) or (payload == "OFF" and switch_status):
-                    #self.rinnai_client.set_mode(mode)
-                    self.rinnai_client.send_command(mode, payload)
-                else:
-                    logging.info(
-                        msg=f"the switch {mode} is in {payload} already, command will not be sent!"
-                    )
+                # switch_status = LocalClient.get_switch_status(
+                #     mode, self.device_data["state"]["operationMode"]
+                # )
+                # if (payload == "ON" and not switch_status) or (payload == "OFF" and switch_status):
+                #     #self.rinnai_client.set_mode(mode)
+                #     self.rinnai_client.send_command(mode, payload)
+                # else:
+                #     logging.info(
+                #         msg=f"the switch {mode} is in {payload} already, command will not be sent!"
+                #     )
+                self.rinnai_client.send_command(mode, payload)
         except Exception as e:
             logging.error(f"Local MQTT set failed: {e}")
 
