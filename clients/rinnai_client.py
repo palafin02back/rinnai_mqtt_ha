@@ -74,7 +74,7 @@ class RinnaiClient(MQTTClientBase):
             # 处理模式切换，args[0]是mode名称，args[1]是payload(ON/OFF)
             mode = args[0]
             payload = args[1] if len(args) > 1 else None
-            self.set_mode(mode, payload)
+            self.set_mode(mode)
         else:
             # 如果是其他命令，直接发布到相应主题
             topic = action

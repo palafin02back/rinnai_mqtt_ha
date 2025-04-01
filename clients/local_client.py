@@ -72,7 +72,7 @@ class LocalClient(MQTTClientBase, DeviceDataObserver):
             elif action == "mode":
                 mode = msg.topic.split("/")[-1]
                 payload = msg.payload.decode()
-                args = [mode, payload]
+                args = [mode]
                 # switch_status = LocalClient.get_switch_status(
                 #     mode, self.device_data["state"]["operationMode"]
                 # )
