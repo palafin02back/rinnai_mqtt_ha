@@ -81,7 +81,7 @@ class LocalClient(MQTTClientBase, DeviceDataObserver):
                 #     logging.info(
                 #         msg=f"the switch {mode} is in {payload} already, command will not be sent!"
                 #     )
-                self.rinnai_client.send_command(mode, payload)
+                self.rinnai_client.set_mode(mode)
         except Exception as e:
             logging.error(f"Local MQTT set failed: {e}")
 
