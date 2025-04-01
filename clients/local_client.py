@@ -64,15 +64,13 @@ class LocalClient(MQTTClientBase, DeviceDataObserver):
     def on_message(self, client, userdata, msg):
         try:
             action = msg.topic.split("/")[-2]
-            args = []
             if action == "temp":
                 temperature = int(msg.payload.decode())
                 heat_type = msg.topic.split("/")[-1]
-                args = [heat_type, temperature]
+                self.rinnai_client.send_command(action, heat_type, temperature)
             elif action == "mode":
                 mode = msg.topic.split("/")[-1]
                 payload = msg.payload.decode()
-                args = [mode]
                 # switch_status = LocalClient.get_switch_status(
                 #     mode, self.device_data["state"]["operationMode"]
                 # )
@@ -82,7 +80,7 @@ class LocalClient(MQTTClientBase, DeviceDataObserver):
                 #     logging.info(
                 #         msg=f"the switch {mode} is in {payload} already, command will not be sent!"
                 #     )
-            self.rinnai_client.send_command(action, args)
+                self.rinnai_client.send_command(action, mode)
         except Exception as e:
             logging.error(f"Local MQTT set failed: {e}")
 
