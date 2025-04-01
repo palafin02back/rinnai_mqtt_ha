@@ -1,0 +1,64 @@
+---
+description: helpful for build homeassistant custom Integration code 
+globs: 
+alwaysApply: false
+---
+
+# Home Assistant Custom Integration Development Principles
+
+Developing custom integrations for Home Assistant requires adhering to core principles and best practices to ensure stability, efficiency, and compatibility with the Home Assistant core architecture. Here are the essential guidelines:
+
+1.  **Async First:**
+    *   Home Assistant's core is built on Python's `asyncio`. All I/O-bound operations (network requests, file access, etc.) **must** be asynchronous using `async` and `await`.
+    *   **Absolutely avoid** blocking the main event loop. Do not use `time.sleep()` or any long-running synchronous operations, as this will freeze the entire Home Assistant instance.
+
+2.  **Use External Libraries for Device/Service Interaction:**
+    *   Encapsulate the logic for communicating with the device or service API into a separate, standalone Python library. The integration code itself should primarily bridge this library's functionality into Home Assistant entities, services, etc.
+    *   This promotes cleaner code, testability, and allows the library to be reused elsewhere.
+    *   Declare library dependencies and their versions in the `manifest.json` file.
+
+3.  **Adhere to Home Assistant Architecture:**
+    *   **Entity:** Represents sensors, switches, lights, etc. Inherit from `homeassistant.helpers.entity.Entity`.
+    *   **Device:** Groups multiple related entities under a single logical device. Register via the `device_registry`.
+    *   **Config Entry:** Handles the user configuration flow via the UI (`async_setup_entry`, `async_unload_entry`). This is the preferred method for modern integrations.
+    *   **Platform:** Organizes code based on entity types (e.g., `sensor`, `light`, `switch`).
+    *   **Service:** Allows users or automations to trigger specific actions within the integration.
+
+4.  **Data Update Strategies:**
+    *   **Polling:** If the device/service doesn't support push updates, use the `DataUpdateCoordinator` (`homeassistant.helpers.update_coordinator`) to periodically fetch data and update all related entities efficiently, avoiding separate API calls per entity.
+    *   **Push:** If the device/service supports real-time updates (e.g., Webhooks, MQTT, WebSockets), prioritize this method for better efficiency.
+
+5.  **Robustness and Error Handling:**
+    *   Gracefully handle API errors, network timeouts, device unavailability, etc.
+    *   Entities should have an `available` property reflecting their current reachability or data validity.
+    *   Using `CoordinatorEntity` (with `DataUpdateCoordinator`) simplifies availability management.
+    *   Provide clear logging (using `_LOGGER = logging.getLogger(__name__)`) to aid debugging for users and developers.
+
+6.  **Unique IDs:**
+    *   Provide stable and unique IDs for entities and devices. This is crucial for allowing users to customize entity names/areas and for Home Assistant to track entities correctly. Usually derived from device serial numbers, MAC addresses, or unique identifiers provided by the API.
+
+7.  **User Experience:**
+    *   **Config Flow:** Whenever possible, use Config Flow to allow users to set up the integration via the UI, rather than editing `configuration.yaml`. This provides a much better user experience, especially for handling authentication (like OAuth2).
+    *   Provide meaningful entity names and icons.
+    *   Register device information correctly so users can see them in the Device Registry.
+
+8.  **Code Quality and Style:**
+    *   Follow the Home Assistant Core code style guidelines (based on PEP 8, using tools like `black`, `isort`, `pylint`, `flake8`).
+    *   Add type hinting.
+    *   Write unit and integration tests to ensure code correctness and stability.
+
+9.  **Dependency Management:**
+    *   Explicitly declare all external Python library dependencies (`requirements`) and dependencies on other integrations (`dependencies`, `after_dependencies`) in `manifest.json`.
+
+10. **Constants Management:**
+    *   Define constants (like the integration `DOMAIN`, `PLATFORMS`, configuration keys) in a dedicated `const.py` file.
+
+**Key Resources:**
+    - you can use web tool to some doc from remote
+*   **Home Assistant Developer Documentation**: The most authoritative source.
+    *   Official Website: [https://developers.home-assistant.io/](mdc:https:/developers.home-assistant.io)
+    *   Building an Integration: [https://developers.home-assistant.io/docs/creating_integration_file_structure](mdc:https:/developers.home-assistant.io/docs/creating_integration_file_structure)
+    *   Core Concepts: [https://developers.home-assistant.io/docs/core/](mdc:https:/developers.home-assistant.io/docs/core)
+    *   Best Practices: [https://developers.home-assistant.io/docs/integration_best_practices](mdc:https:/developers.home-assistant.io/docs/integration_best_practices)
+*   **Home Assistant Core Repository**: Refer to existing core integrations for examples. [https://github.com/home-assistant/core](mdc:https:/github.com/home-assistant/core)
+*   **HACS (Home Assistant Community Store)**: Understanding HACS requirements is helpful if you plan to distribute your custom integration. [https://hacs.xyz/](mdc:https:/hacs.xyz).

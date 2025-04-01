@@ -151,6 +151,10 @@ class RinnaiClient(MQTTClientBase):
     def set_mode(self, mode):
         if not mode:
             raise ValueError("Error: mode not specified")
+        
+        # 确保 mode 是字符串而不是列表
+        if isinstance(mode, list):
+            mode = mode[0]
 
         request_payload = {
             "code": self.config.AUTH_CODE,
