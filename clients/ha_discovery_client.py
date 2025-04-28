@@ -106,15 +106,17 @@ class RinnaiHomeAssistantDiscovery(MQTTClientBase):
             "energySavingMode": ["采暖节能", "快速采暖/节能"],
             "outdoorMode": ["采暖外出", "快速采暖/外出"],
             "rapidHeating": ["快速采暖", "快速采暖/节能", "快速采暖/外出", "快速采暖/预约"],
+            "summerWinter": ["关机", "采暖关闭", "休眠"]
         }
 
+        codes = mode_codes.get(object_id, [])
+        codes_string = ','.join(f"'{code}'" for code in codes)
+
+        # 对于summerWinter，当值在列表中时为OFF，其他情况为ON
         if object_id == "summerWinter":
-            # 对于采暖开关，operationMode 为 '0', '1', '2' 时为 OFF，其它为 ON
-            return "{% if value_json.operationMode in ['关机', '采暖关闭', '休眠'] %}OFF{% else %}ON{% endif %}"
+            return f"{{% if value_json.operationMode in [{codes_string}] %}}OFF{{% else %}}ON{{% endif %}}"
+        # 对于其他开关，当值在列表中时为ON，其他情况为OFF
         else:
-            codes = mode_codes.get(object_id, [])
-            # 构建用于判断的模板字符串
-            codes_string = ','.join(f"'{code}'" for code in codes)
             return f"{{% if value_json.operationMode in [{codes_string}] %}}ON{{% else %}}OFF{{% endif %}}"
 
 

@@ -1,0 +1,18 @@
+{
+    "domain": "rinnai_water_heater",
+    "name": "Rinnai Water Heater",
+    "codeowners": [
+        "@your-github-username"
+    ],
+    "config_flow": true,
+    "dependencies": [
+        "mqtt"
+    ],
+    "documentation": "https://github.com/your-username/rinnai_water_heater",
+    "iot_class": "local_push",
+    "issue_tracker": "https://github.com/your-username/rinnai_water_heater/issues",
+    "requirements": [
+        "paho-mqtt>=1.6.1"
+    ],
+    "version": "1.0.0"
+}

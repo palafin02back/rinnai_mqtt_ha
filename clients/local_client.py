@@ -53,11 +53,13 @@ class LocalClient(MQTTClientBase, DeviceDataObserver):
                 "快速采暖/外出",
                 "快速采暖/预约",
             ],
+            "summerWinter": ["关机", "采暖关闭", "休眠"]
         }
-
-        codes = mode_codes.get(switch, [])
         # 构建用于判断的模板字符串
-        return operationMode in codes
+        if switch == "summerWinter":
+            return operationMode not in mode_codes.get(switch, [])
+        else:
+            return operationMode in mode_codes.get(switch, [])
 
     def on_message(self, client, userdata, msg):
         try:
@@ -65,18 +67,15 @@ class LocalClient(MQTTClientBase, DeviceDataObserver):
             if action == "temp":
                 temperature = int(msg.payload.decode())
                 heat_type = msg.topic.split("/")[-1]
-                self.rinnai_client.set_temperature(heat_type, temperature)
+                self.rinnai_client.send_command(action, heat_type, temperature)
             elif action == "mode":
                 mode = msg.topic.split("/")[-1]
                 payload = msg.payload.decode()
                 switch_status = LocalClient.get_switch_status(
                     mode, self.device_data["state"]["operationMode"]
                 )
-                if (payload == "ON" and not switch_status) or (
-                    payload == "OFF" and switch_status
-                ):
-                    #self.rinnai_client.set_mode(mode)
-                    self.rinnai_client.send_command(mode, payload)
+                if (payload == "ON" and not switch_status) or (payload == "OFF" and switch_status):
+                    self.rinnai_client.send_command(action, mode)
                 else:
                     logging.info(
                         msg=f"the switch {mode} is in {payload} already, command will not be sent!"
