@@ -3,6 +3,9 @@
 
 本项目旨在桥接林内智能设备与 Home Assistant，目前已在 `RBS-**G56系列` (设备 ID: `0F06000C`) 上进行测试。对于其他型号的林内设备，可能需要根据设备抓包信息自行添加 MQTT 主题。
 
+
+## ⚠️注意本项目停止维护 ⚠️，可以使用[HA集成版本](https://github.com/palafin02back/rinnai_integration)
+
 ## ⚠️ 注意：订阅过多存在封号风险！ ⚠️
 https://github.com/palafin02back/rinnai_mqtt_ha/issues/22
 - 请注意！目前发现订阅数量过多，可能触发封禁，返回rc：5
